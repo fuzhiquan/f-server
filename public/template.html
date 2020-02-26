@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+    <head>
+        <title>f-server</title>
+    </head>
+    <body>
+        <ul style='list-style:none'>
+            {% for dir in dirs %}
+                <li><a href={{ dir.path }}>{{ dir.text }}</a></li>
+            {% endfor %}
+          </ul>
+    </body>
+</html>

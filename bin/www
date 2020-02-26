@@ -1,0 +1,14 @@
+#! /usr/bin/env node
+
+const program = require('commander')
+
+program
+        .description('welcome use local web server')
+        .version('1.0.0', '-v, --version', 'output the current version')
+        .option('-p, --port <val>', 'set server port', 3000)
+        .option('-d, --directory <dir>', 'set server root directory')
+
+const argv = program.parse(process.argv)
+
+const server = require('../src/index.js')
+new server({...argv}).start()

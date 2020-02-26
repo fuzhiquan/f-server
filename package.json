@@ -1,0 +1,35 @@
+{
+  "name": "f-server",
+  "version": "1.0.0",
+  "description": "web server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fuzhiquan/f-server.git"
+  },
+  "bin": {
+    "f-server": "./bin/www"
+  },
+  "keywords": [
+    "f-server",
+    "web-server",
+    "static-server",
+    "server"
+  ],
+  "author": "fuzhiquan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fuzhiquan/f-server/issues"
+  },
+  "homepage": "https://github.com/fuzhiquan/f-server#readme",
+  "dependencies": {
+    "chalk": "^3.0.0",
+    "commander": "^4.1.1",
+    "crypto": "^1.0.1",
+    "mime": "^2.4.4",
+    "nunjucks": "^3.2.0"
+  }
+}
