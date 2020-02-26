@@ -4,6 +4,7 @@ const http = require('http')
 const querystring = require('querystring')
 const fs = require('fs').promises
 const { createReadStream, createWriteStream, readFileSync } = require('fs')
+const zlib = require('zlib')
 
 const nunjucks = require('nunjucks')
 const chalk = require('chalk')
@@ -28,6 +29,30 @@ class Server {
                 this.sendFile(statObj, absPath, req, res)
             }
         }catch(e) {
+            if(req.headers.origin) {
+                res.setHeader('Access-Control-Allow-Origin', req.headers.origin)
+                res.setHeader('Access-Control-Allow-Credentials', 'true')
+                res.setHeader('Access-Control-Allow-Headers', '*')
+                res.setHeader('Access-Control-Max-Age', '1800') // 设置OPTIONS预检最大存活时间，单位s,一般三分钟
+                res.setHeader('Access-Control-Allow-Methods', 'PUT,DELETE,OPTIONS')
+                res.setHeader('Set-Cookie', 'name=zhi;SameSite=None;Secure')
+                if(req.method === 'OPTIONS') {
+                    return res.end()
+                }
+            }
+            if(pathname === '/user') {
+                const contentType = req.headers['Content-Type']
+                const arr = []
+                req.on('data', (chunk) => {
+                    arr.push(chunk)
+                })
+                req.on('end', () => {
+                    const str = require('querystring').parse(Buffer.concat(arr).toString())
+                    res.setHeader('Content-Type', 'application/json')
+                    return res.end(JSON.stringify(req.headers['cookie']))
+                })
+                return
+            }
             this.statusCode = 404
             res.end('not found')
         }
@@ -70,7 +95,17 @@ class Server {
             res.statusCode = 304
             res.end()
         }
-        createReadStream(absPath).pipe(res)
+        // 处理压缩
+        const encoding = req.headers['accept-encoding']
+        if(encoding.match(/\bgzip\b/)) {
+            res.setHeader('Content-Encoding', 'gzip')
+            createReadStream(absPath).pipe(zlib.createGzip()).pipe(res)
+        }else if(encoding.match(/\bdeflate\b/)){
+            res.setHeader('Content-Encoding', 'deflate')
+            createReadStream(absPath).pipe(zlib.createDeflate()).pipe(res)
+        }else {
+            createReadStream(absPath).pipe(res)
+        }
     }
     start() {
         const server = http.createServer(this.handlerRequest.bind(this))
