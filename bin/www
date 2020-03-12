@@ -11,4 +11,4 @@ program
 const argv = program.parse(process.argv)
 
 const server = require('../src/index.js')
-new server({...argv}).start()
+new server({directory: process.cwd(), ...argv}).start()

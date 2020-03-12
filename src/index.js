@@ -3,7 +3,7 @@ const url = require('url')
 const http = require('http')
 const querystring = require('querystring')
 const fs = require('fs').promises
-const { createReadStream, createWriteStream, readFileSync } = require('fs')
+const { createReadStream, createWriteStream, readFileSync, writeFileSync } = require('fs')
 const zlib = require('zlib')
 
 const nunjucks = require('nunjucks')
@@ -11,16 +11,54 @@ const chalk = require('chalk')
 const mime = require('mime')
 const crypto = require('crypto')
 
+Buffer.prototype.split = function(sep) {
+    const arr = []
+    const len = Buffer.from(sep).length
+    let current;
+    let offset = 0
+    while((current = this.indexOf(sep, offset)) !== -1) {
+        arr.push(this.slice(offset, current))
+        offset = current + len
+    }
+    arr.push(this.slice(offset))
+    return arr
+}
 class Server {
     constructor(options = {}) {
         this.port = options.port
-        this.dir = options.dir
+        this.directory = options.directory
     }
     async handlerRequest(req, res) {
         let { pathname } = url.parse(req.url)
         pathname = decodeURIComponent(pathname) // 防止url中有中文
 
-        const absPath = path.join(__dirname, pathname)
+        const absPath = path.join(this.directory, pathname)
+        if(pathname === '/img') { // 临时功能，图片上传
+            const arr = []
+            req.on('data', chunk => {
+                arr.push(chunk)
+            })
+            req.on('end', () => {
+                const body = Buffer.concat(arr)
+                const boundary = `--${req.headers['content-type'].split('boundary=')[1]}`
+                const data = body.split(boundary).slice(1, -1)[0]
+
+                let [info, value] = data.split('\r\n\r\n')
+                info = info.toString()
+                if(info.includes('filename')) {
+                    const filename = info.match(/filename\=\"(.+)\"/)[1]
+                    const filePath = path.resolve(__dirname, `./assets/${filename}`)
+                    const content = data.slice(info.length + 4, -2)
+                    const writeStream = createWriteStream(filePath)
+                    writeStream.write(content, error => {
+                        console.log(error)
+                    })
+                }
+                res.setHeader('Content-type', 'text/html;charset=utf-8')
+                return res.end(`<html><body>${data}</body></html>`)
+            })
+            return
+        }
         try{
             const statObj = await fs.stat(absPath)
             if(statObj.isDirectory()) {
@@ -39,19 +77,6 @@ class Server {
                 if(req.method === 'OPTIONS') {
                     return res.end()
                 }
-            }
-            if(pathname === '/user') {
-                const contentType = req.headers['Content-Type']
-                const arr = []
-                req.on('data', (chunk) => {
-                    arr.push(chunk)
-                })
-                req.on('end', () => {
-                    const str = require('querystring').parse(Buffer.concat(arr).toString())
-                    res.setHeader('Content-Type', 'application/json')
-                    return res.end(JSON.stringify(req.headers['cookie']))
-                })
-                return
             }
             this.statusCode = 404
             res.end('not found')

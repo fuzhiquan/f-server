@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+    <head>
+        <title>f-server</title>
+    </head>
+    <body>
+        <h2>开始</h2>
+        <form>
+            <div id="container" onclick="file.click()" style="width: 200px;height: 100px;border:1px solid #ccc;text-align: center;line-height: 100px;color: #ccc;cursor: pointer;">
+                支持拖拽上传
+            </div>
+            <input id="file" accept="image/*" onchange="onUpload(event)" type="file" name="files" style="width: 0;height: 0;">
+        </form>
+        <script>
+            function uploadFile(files) {
+                const formData = new FormData()
+                files.forEach(file => {
+                    const xhr = new XMLHttpRequest
+                    xhr.open('POST', 'http://localhost:3000/img')
+                    xhr.onload = function() {
+                        console.log(xhr.response)
+                    }
+                    const formdata = new FormData()
+                    formdata.append('file', file)
+                    xhr.send(formdata)
+                })
+            }
+            function onUpload(e) {
+                const files = Array.from(e.target.files)
+                uploadFile(files)
+            }
+            
+            container.addEventListener('dragover', function(e) {
+                e.stopPropagation()
+                e.preventDefault()
+            }, false)
+        
+            container.addEventListener('drop', function(e) {
+                e.stopPropagation()
+                e.preventDefault()
+                uploadFile(Array.from(e.dataTransfer.files))
+            }, false)
+
+        </script>
+    </body>
+</html>
